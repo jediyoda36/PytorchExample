@@ -1,4 +1,5 @@
 import os
+
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 import time
 import torch
@@ -13,14 +14,19 @@ import argparse
 # Device configuration
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+
 def main(args):
     # Create model
     if not os.path.exists(args.model_path):
         os.makedirs(args.model_path)
 
-    train_datasets = CarDateSet('./data/train', './data/train.txt', transforms=None)
+    train_datasets = CarDateSet('./data/train',
+                                './data/train.txt',
+                                transforms=None)
 
-    test_datasets = CarDateSet('./data/train', './data/valid.txt', transforms=None)
+    test_datasets = CarDateSet('./data/train',
+                               './data/valid.txt',
+                               transforms=None)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_datasets,
                                                batch_size=args.batch_size,
@@ -33,7 +39,7 @@ def main(args):
     print("Train numbers:{:d}".format(len(train_datasets)))
 
     if args.pretrained:
-        model = resnet50(num_classes=1000)
+        model = resnet50(num_classes=2)
         model.load_state_dict(torch.load(args.pretrained_model))
         channel_in = model.fc.in_features  # 获取fc层的输入通道数
         # 然后把resnet的fc层替换成自己分类类别的fc层
@@ -61,17 +67,17 @@ def main(args):
             loss = cost(outputs, labels)
 
             if index % 10 == 0:
-                print (loss)
+                print(loss)
             # Backward and optimize
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
             index += 1
 
-
         if epoch % 1 == 0:
             end = time.time()
-            print("Epoch [%d/%d], Loss: %.8f, Time: %.1fsec!" % (epoch, args.epochs, loss.item(), (end-start) * 2))
+            print("Epoch [%d/%d], Loss: %.8f, Time: %.1fsec!" %
+                  (epoch, args.epochs, loss.item(), (end - start) * 2))
 
             model.eval()
 
@@ -94,8 +100,13 @@ def main(args):
             print("Acc: %.4f" % (correct_prediction / total))
 
         # Save the model checkpoint
-        torch.save(model, os.path.join(args.model_path, '%s-%d.pth' % (args.model_name, epoch)))
-    print("Model save to %s."%(os.path.join(args.model_path, '%s-%d.pth' % (args.model_name, epoch))))
+        torch.save(
+            model,
+            os.path.join(args.model_path,
+                         '%s-%d.pth' % (args.model_name, epoch)))
+    print("Model save to %s." %
+          (os.path.join(args.model_path, '%s-%d.pth' %
+                        (args.model_name, epoch))))
 
 
 if __name__ == '__main__':
@@ -110,8 +121,10 @@ if __name__ == '__main__':
     # parser.add_argument("--num_workers", default=2, type=int)
     parser.add_argument("--model_name", default='car', type=str)
     parser.add_argument("--model_path", default='./model', type=str)
-    parser.add_argument("--pretrained", default=True, type=bool)
-    parser.add_argument("--pretrained_model", default='./model/resnet50.pth', type=str)
+    parser.add_argument("--pretrained", default=False, type=bool)
+    parser.add_argument("--pretrained_model",
+                        default='./model/resnet50.pth',
+                        type=str)
     args = parser.parse_args()
 
     main(args)
